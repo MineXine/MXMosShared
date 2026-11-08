@@ -4,7 +4,13 @@
  */
 
 export type Visibility = 'public' | 'private';
-export type PostStatus = 'published' | 'archived';
+/**
+ * 说说状态：
+ * - published 正常发布
+ * - archived 已封存（从默认列表移出，可恢复）
+ * - hidden   隐藏（仅作者可见，等同自用草稿箱）
+ */
+export type PostStatus = 'published' | 'archived' | 'hidden';
 
 export interface User {
   id: string;
@@ -171,6 +177,73 @@ export interface TagInfo {
   count: number;
   /** 最近使用时间 */
   lastUsedAt: string;
+  /** 标签别名：指向主标签名（用于合并改名） */
+  alias?: string;
+  description?: string;
+}
+
+/**
+ * API 访问令牌 —— 供第三方（小程序、CLI、自动化脚本）长期访问开放接口。
+ * 与 JWT 会话不同：JWT 短时且绑定登录态，Token 可长期使用、可单独吊销。
+ */
+export interface ApiToken {
+  id: string;
+  ownerId: string;
+  /** 令牌名称（标识用途，如「微信小程序」「脚本」） */
+  name: string;
+  /**
+   * 令牌哈希（sha256）。明文只在创建时返回一次，之后无法取回。
+   * `token` 字段对外一律返回掩码形式。
+   */
+  token: string;
+  /** 明文前缀（如 `mx_ab12cd34`），仅用于列表识别，不足以鉴权 */
+  prefix: string;
+  /** 启用 / 停用，停用后所有请求返回 401 */
+  enabled: boolean;
+  /** 权限范围：目前支持 posts:write（开放发布） */
+  scopes: string[];
+  /** 最近使用时间（用于审计） */
+  lastUsedAt: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+}
+
+/**
+ * 第三方推送通知渠道配置。
+ * 形态与 kkapi-open 的 noticeType 对齐，便于迁移。
+ */
+export type NoticeType =
+  | 'telegram'
+  | 'wecom'      // 企业微信
+  | 'dingtalk'   // 钉钉
+  | 'bark'       // Bark（iOS）
+  | 'pushplus'   // PushPlus
+  | 'pushdeer'   // PushDeer
+  | 'serverchan' // Server酱
+  | 'igot'
+  | 'qmsg'
+  | 'gocqhttp'
+  | 'webhook';   // 通用 Webhook
+
+export interface NoticeConfig {
+  id: string;
+  ownerId: string;
+  type: NoticeType;
+  /** 渠道对应的 token / webhook 地址 */
+  token: string;
+  title: string;
+  enabled: boolean;
+  /** 触发时机：新建说说时推送 */
+  onPostCreate: boolean;
+  lastSentAt: string | null;
+  createdAt: string;
+}
+
+/** 推送请求载荷 */
+export interface NoticePayload {
+  title: string;
+  content: string;
+  url?: string;
 }
 
 export interface DashboardStats {
